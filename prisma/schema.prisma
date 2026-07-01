@@ -8,40 +8,54 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// Role အမျိုးအစားများကို ကြိုတင်သတ်မှတ်ခြင်း
 enum Role {
   USER
   ADMIN
 }
 
 model User {
-  id               String              @id @default(uuid()) @db.Uuid
-  name             String              @db.VarChar(100)
-  email            String              @unique @db.VarChar(255)
-  passwordHash     String              @map("password_hash") @db.VarChar(255)
-  parentPhone      String?             @unique @map("parent_phone") @db.VarChar(20)
-  telegramChatId   String?             @map("telegram_chat_id") @db.VarChar(50)
-  role             Role                @default(USER)
-  
-  createdAt        DateTime            @default(now()) @map("created_at") @db.Timestamp
-  
-  walletTransactions WalletTransaction[]
-  smsLogs            SmsLog[]
+  id             String   @id @default(uuid()) @db.Uuid
+  name           String   @db.VarChar(100)
+  email          String   @unique @db.VarChar(255)
+  passwordHash   String   @map("password_hash") @db.VarChar(255)
+  parentPhone    String?  @unique @map("parent_phone") @db.VarChar(20)
+  telegramChatId String?  @map("telegram_chat_id") @db.VarChar(50)
+  role           Role     @default(USER)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamp
 
-  @@map("users")
+  // Relationships
+  wallet  Wallet? // ◄◄ ပြင်ဆင်ချက်- Array ဖြစ်စရာမလိုပါ၊ User တစ်ယောက်မှာ Wallet တစ်ခုစီပဲ ရှိမည် (1:1)
+  smsLogs SmsLog[]
+
   @@index([parentPhone])
+  @@map("users")
+}
+
+model Wallet {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @unique @map("user_id") @db.Uuid
+  balance   Decimal  @default(0.00) @db.Decimal(10, 2)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp
+
+  // Relationships
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions WalletTransaction[] // ဒီ Wallet ရဲ့ အဝင်/အထွက် မှတ်တမ်းများ
+
+  @@map("wallets")
 }
 
 model WalletTransaction {
   id          String   @id @default(uuid()) @db.Uuid
-  userId      String   @map("user_id") @db.Uuid
+  walletId    String   @map("wallet_id") @db.Uuid // ◄◄ ပြင်ဆင်ချက်- User ID အစား Wallet ID နဲ့ ချိတ်ဆက်ပါသည်
   amount      Decimal  @db.Decimal(10, 2)
   type        String   @db.VarChar(10) // 'CREDIT' or 'DEBIT'
+  status      String   @default("PENDING") @db.VarChar(20) // 'PENDING', 'APPROVED', 'REJECTED'
   description String?  @db.Text
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp
 
   // Relationships
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade) // ◄◄ ပြင်ဆင်ချက်- Wallet ကို ပြန်ညွှန်ပေးရပါမည်
 
   @@map("wallet_transactions")
 }
@@ -59,6 +73,6 @@ model SmsLog {
   // Relationships
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("sms_logs")
   @@index([smsProviderMsgId])
+  @@map("sms_logs")
 }

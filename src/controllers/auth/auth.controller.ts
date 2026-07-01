@@ -47,6 +47,16 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
       }
     });
 
+    const wallet = await prisma.wallet.create({
+      data: {
+        userId: newUser.id,
+        balance: 0.00
+      },
+      select: {
+        balance: true
+      }
+    });
+
     res.status(201).json({
       status: 'OK',
       message: 'User registered successfully!',
