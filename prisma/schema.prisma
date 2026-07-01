@@ -1,0 +1,64 @@
+// prisma/schema.prisma
+
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Role အမျိုးအစားများကို ကြိုတင်သတ်မှတ်ခြင်း
+enum Role {
+  USER
+  ADMIN
+}
+
+model User {
+  id               String              @id @default(uuid()) @db.Uuid
+  name             String              @db.VarChar(100)
+  email            String              @unique @db.VarChar(255)
+  passwordHash     String              @map("password_hash") @db.VarChar(255)
+  parentPhone      String?             @unique @map("parent_phone") @db.VarChar(20)
+  telegramChatId   String?             @map("telegram_chat_id") @db.VarChar(50)
+  role             Role                @default(USER)
+  
+  createdAt        DateTime            @default(now()) @map("created_at") @db.Timestamp
+  
+  walletTransactions WalletTransaction[]
+  smsLogs            SmsLog[]
+
+  @@map("users")
+  @@index([parentPhone])
+}
+
+model WalletTransaction {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  amount      Decimal  @db.Decimal(10, 2)
+  type        String   @db.VarChar(10) // 'CREDIT' or 'DEBIT'
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp
+
+  // Relationships
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("wallet_transactions")
+}
+
+model SmsLog {
+  id               String   @id @default(uuid()) @db.Uuid
+  userId           String   @map("user_id") @db.Uuid
+  direction        String   @db.VarChar(10) // 'INBOUND' or 'OUTBOUND'
+  messageContent   String   @map("message_content") @db.Text
+  smsProviderMsgId String?  @map("sms_provider_msg_id") @db.VarChar(100)
+  status           String   @db.VarChar(20) // 'pending', 'sent', 'delivered', 'failed'
+  cost             Decimal  @db.Decimal(5, 2)
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamp
+
+  // Relationships
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sms_logs")
+  @@index([smsProviderMsgId])
+}
