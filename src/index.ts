@@ -14,6 +14,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use('/health', healthRouter);
+// app.use('/health', healthRouter);
 app.use('/admin', adminAuthRouter);
 app.use('/user', userAuthRouter);
 app.use('/transaction', transactionRouter);
