@@ -10,18 +10,18 @@ import transactionRouter from './routes/transaction';
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// app.use(cors());
 app.use(cors());
 
 app.use(express.json());
 
 app.use('/health', healthRouter);
-// app.use('/health', healthRouter);
 app.use('/admin', adminAuthRouter);
 app.use('/user', userAuthRouter);
 app.use('/transaction', transactionRouter);
 app.use('/admin/transaction', transactionRouter);
+app.use('/admin/user', userAuthRouter);
+
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server is flying on http://localhost:${PORT}`);
+  console.log(`==================> Server is flying on http://localhost:${PORT}`);
 });
